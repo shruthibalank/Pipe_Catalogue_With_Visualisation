@@ -45,57 +45,69 @@
       justify-content: center;
       width: 100vw;
     }
+    #customAlert {
+      display: none;
+    }
     .custom-alert-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(13,27,42,0.75);
       z-index: 2000;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .custom-alert-box {
-      background: #1b263b;
+      background: linear-gradient(135deg, #1b263b 80%, #00e0ff22 100%);
       color: #fff;
-      border-radius: 16px;
+      border-radius: 18px;
       box-shadow: 0 8px 40px #000a;
-      padding: 36px 40px 28px 40px;
-      min-width: 320px;
+      padding: 38px 44px 30px 44px;
+      min-width: 340px;
       text-align: center;
       font-family: 'Segoe UI', sans-serif;
       position: relative;
       animation: popIn 0.25s cubic-bezier(.4,2,.6,1);
+      border: 2px solid #00e0ff;
     }
     .custom-alert-box h3 {
       margin-top: 0;
       color: #00e0ff;
-      font-size: 1.3em;
+      font-size: 1.35em;
       margin-bottom: 18px;
+      letter-spacing: 1px;
     }
     .custom-alert-box select {
       font-size: 1.1em;
-      padding: 7px 16px;
-      border-radius: 6px;
-      border: 1px solid #007BFF;
+      padding: 8px 18px;
+      border-radius: 7px;
+      border: 1.5px solid #00e0ff;
       margin-bottom: 18px;
-      margin-top: 8px;
+      margin-top: 10px;
       background: #11203a;
       color: #fff;
       outline: none;
+      transition: border 0.2s;
+    }
+    .custom-alert-box select:focus {
+      border: 1.5px solid #00b3ff;
     }
     .custom-alert-box button {
       background: linear-gradient(90deg,#00e0ff,#00b3ff);
       color: #fff;
       border: none;
-      border-radius: 6px;
-      padding: 8px 28px;
-      font-size: 1.1em;
+      border-radius: 7px;
+      padding: 9px 32px;
+      font-size: 1.13em;
       cursor: pointer;
-      margin: 0 8px;
-      transition: background 0.2s;
+      margin: 0 10px;
+      margin-top: 10px;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 2px 12px #00e0ff33;
     }
     .custom-alert-box button:hover {
       background: linear-gradient(90deg,#00b3ff,#00e0ff);
+      transform: scale(1.04);
     }
     @keyframes popIn {
       from { transform: scale(0.85); opacity: 0; }
@@ -104,7 +116,14 @@
   </style>
 </head>
 <body>
-  <h2>Pipe Design Table</h2>
+  <h2 style="text-align:center; margin-bottom: 18px;">
+  Pipe Design Table
+  <span style="margin-left:40px; font-size:18px;">
+    <label for="projectName" style="color:#007BFF; font-weight:600;">Name of the Project:</label>
+    <input id="projectName" type="text" placeholder="Enter project name" style="padding:6px 14px; border-radius:6px; border:1px solid #007BFF; font-size:16px; margin-left:8px; width:260px;">
+  </span>
+</h2>
+
   <div style="margin-bottom: 10px;">
     <button id="addRowBtn" style="background-color: #007BFF; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px;" onclick="addRow()">Add Row</button>
     <button id="visualiseBtn" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px;" onclick="openVisualiseModal()">Visualise</button>
@@ -147,6 +166,7 @@
   </div>
 
   <!-- Visualisation Area -->
+  <!-- Add Tap.jpg to your Images folder for this to work visually -->
   <div id="visualisationArea">
     <canvas id="pipeCanvas" width="1600" height="500" style="background:transparent; display:block; margin:auto; max-width:100%;"></canvas>
   </div>
@@ -199,7 +219,8 @@
       return select;
     }
 
-    function addRow(defaults = {from:0, to:50, qLpm:6000}) {
+    // Add a row with default length 300 (from: 0, to: 300)
+    function addRow(defaults = {from:0, to:300, qLpm:6000}) {
       const tbody = document.getElementById("pipeTableBody");
       const rowIdx = tbody.children.length + 1;
       const tr = document.createElement("tr");
@@ -207,8 +228,8 @@
       tr.innerHTML = `
         <td>${rowIdx}</td>
         <td><input type="number" id="from_${rowIdx}" value="${defaults.from}" onchange="updateRow(${rowIdx})"></td>
-        <td><input type="number" id="to_${rowIdx}" value="${defaults.to}" onchange="updateRow(${rowIdx})"></td>
-        <td><input type="text" id="length_${rowIdx}" class="output" readonly></td>
+        <td><input type="number" id="to_${rowIdx}" value="300" onchange="updateRow(${rowIdx})"></td>
+        <td><input type="number" id="length_${rowIdx}" value="300" onchange="updateRow(${rowIdx})" style="background:#1b263b; color:#e6ff70; border:none; font-weight:600;"></td>
         <td><input type="text" id="gl_${rowIdx}" class="output" readonly value=""></td>
         <td><input type="text" id="v_${rowIdx}" class="output" readonly></td>
         <td><input type="number" id="qLpm_${rowIdx}" value="${defaults.qLpm}" onchange="updateRow(${rowIdx})"></td>
@@ -218,7 +239,7 @@
         <td><input type="text" id="v2_qarea_${rowIdx}" class="output" readonly></td>
         <td><input type="text" id="v2_${rowIdx}" class="output" readonly></td>
         <td>
-          <button onclick="deleteRow(this)" style="background:#dc3545; color:#fff; border:none; border-radius:4px; padding:6px 14px; font-size:15px; cursor:pointer;">Delete</button>
+          <button onclick="deleteRow(this)">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -290,8 +311,10 @@
       overlay.innerHTML = `
         <div class="custom-alert-overlay">
           <div class="custom-alert-box">
-            <h3>Visualise Pipe Row</h3>
-            <div style="margin-bottom:12px;">Select which row you want to visualise:</div>
+            <h3>Choose Row to Visualise</h3>
+            <div style="margin-bottom:14px; font-size:1.08em; color:#e6ff70;">
+              Multiple rows found. Please select which row you want to display:
+            </div>
             <select id="rowSelect">
               ${Array.from({length: rowCount}, (_, i) => `<option value="${i+1}">Row ${i+1}</option>`).join('')}
             </select>
@@ -312,7 +335,6 @@
       };
     }
 
-    // Simple custom alert for single message
     function showSimpleAlert(msg) {
       const overlay = document.getElementById('customAlert');
       overlay.innerHTML = `
@@ -334,16 +356,16 @@
       const length = parseFloat(document.getElementById(`length_${rowIdx}`).value) || 0;
       const diameter = parseFloat(document.getElementById(`diameter_${rowIdx}`).value) || 100;
       const q = parseFloat(document.getElementById(`qLpm_${rowIdx}`).value) || 0;
+      const v = parseFloat(document.getElementById(`v_${rowIdx}`).value) || 0;
 
       // Proportional scaling
-      const minLenPx = 350, maxLenPx = 1100;
+      const minLenPx = 220, maxLenPx = 650;
       const minLenVal = 1, maxLenVal = 1000;
       let scaledLen = minLenPx + ((length - minLenVal) * (maxLenPx - minLenPx)) / (maxLenVal - minLenVal);
       if (scaledLen < minLenPx) scaledLen = minLenPx;
       if (scaledLen > maxLenPx) scaledLen = maxLenPx;
 
-      // For thickness, diameter is 100,200,...1000, but don't show too much difference
-      const minThickPx = 16, maxThickPx = 44;
+      const minThickPx = 12, maxThickPx = 32;
       const minDia = 100, maxDia = 1000;
       let scaledThick = minThickPx + ((diameter - minDia) * (maxThickPx - minThickPx)) / (maxDia - minDia);
       if (scaledThick < minThickPx) scaledThick = minThickPx;
@@ -351,12 +373,11 @@
 
       // Draw
       const canvas = document.getElementById('pipeCanvas');
-      // Make canvas bigger and retina-friendly
-      canvas.width = 1600;
-      canvas.height = 500;
+      canvas.width = 1200;
+      canvas.height = 400;
       canvas.style.width = "100%";
-      canvas.style.maxWidth = "1600px";
-      canvas.style.height = "500px";
+      canvas.style.maxWidth = "1200px";
+      canvas.style.height = "400px";
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -365,22 +386,26 @@
       sumpImg.src = "Sump.jpg";
       const tankImg = new Image();
       tankImg.src = "Tank.jpg";
+      const tapImg = new Image();
+      tapImg.src = "Tap.jpg";
 
-      sumpImg.onload = tankImg.onload = function() {
+      sumpImg.onload = tankImg.onload = tapImg.onload = function() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Layout
-        const margin = 160;
+        const margin = 120;
         const nodeRadius = 60;
         const imgWidth = 140;
         const y = canvas.height / 2;
         const startX = margin;
-        const endX = startX + scaledLen;
+        const tankX = startX + scaledLen + 120;
+        const tapX = tankX + scaledLen + 120;
 
         // Background gradient
         let grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         grad.addColorStop(0, "#0d1b2a");
-        grad.addColorStop(1, "#1b263b");
+        grad.addColorStop(0.5, "#1b263b");
+        grad.addColorStop(1, "#233554");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -399,9 +424,10 @@
           ctx.restore();
         }
         glowDot(startX + imgWidth / 2, y, "#00ffb3");
-        glowDot(endX + imgWidth / 2, y, "#00b3ff");
+        glowDot(tankX + imgWidth / 2, y, "#00b3ff");
+        glowDot(tapX + imgWidth / 2, y, "#ffe066");
 
-        // Draw Sump
+        // Draw Water Head (was Sump)
         ctx.save();
         ctx.beginPath();
         ctx.arc(startX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
@@ -413,33 +439,46 @@
         ctx.font = "bold 28px Segoe UI";
         ctx.fillStyle = "#00ffb3";
         ctx.textAlign = "center";
-        ctx.fillText("Sump", startX + imgWidth / 2, y + nodeRadius + 44);
+        ctx.fillText("Water Head", startX + imgWidth / 2, y + nodeRadius + 44);
 
         // Draw Tank
         ctx.save();
         ctx.beginPath();
-        ctx.arc(endX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+        ctx.arc(tankX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.shadowColor = "#00b3ff";
         ctx.shadowBlur = 24;
-        ctx.drawImage(tankImg, endX, y - imgWidth / 2, imgWidth, imgWidth);
+        ctx.drawImage(tankImg, tankX, y - imgWidth / 2, imgWidth, imgWidth);
         ctx.restore();
         ctx.font = "bold 28px Segoe UI";
         ctx.fillStyle = "#00b3ff";
         ctx.textAlign = "center";
-        ctx.fillText("Tank", endX + imgWidth / 2, y + nodeRadius + 44);
+        ctx.fillText("Tank", tankX + imgWidth / 2, y + nodeRadius + 44);
 
-        // Draw pipe (line)
+        // Draw Tap
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(tapX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.shadowColor = "#ffe066";
+        ctx.shadowBlur = 24;
+        ctx.drawImage(tapImg, tapX, y - imgWidth / 2, imgWidth, imgWidth);
+        ctx.restore();
+        ctx.font = "bold 28px Segoe UI";
+        ctx.fillStyle = "#ffe066";
+        ctx.textAlign = "center";
+        ctx.fillText("Tap", tapX + imgWidth / 2, y + nodeRadius + 44);
+
+        // Pipe 1: Water Head to Tank
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(startX + imgWidth, y);
-        ctx.lineTo(endX, y);
-        // Neon gradient for pipe
-        let pipeGrad = ctx.createLinearGradient(startX + imgWidth, y, endX, y);
-        pipeGrad.addColorStop(0, "#00ffb3");
-        pipeGrad.addColorStop(0.5, "#00e0ff");
-        pipeGrad.addColorStop(1, "#00b3ff");
-        ctx.strokeStyle = pipeGrad;
+        ctx.lineTo(tankX, y);
+        let pipeGrad1 = ctx.createLinearGradient(startX + imgWidth, y, tankX, y);
+        pipeGrad1.addColorStop(0, "#00ffb3");
+        pipeGrad1.addColorStop(0.5, "#00e0ff");
+        pipeGrad1.addColorStop(1, "#00b3ff");
+        ctx.strokeStyle = pipeGrad1;
         ctx.lineWidth = scaledThick;
         ctx.shadowColor = "#00e0ff";
         ctx.shadowBlur = 24;
@@ -447,39 +486,80 @@
         ctx.stroke();
         ctx.restore();
 
-        // Draw animated moving dots on pipe for flow effect
-        let dotCount = Math.max(6, Math.floor(scaledLen / 120));
-        let now = Date.now();
-        for (let i = 0; i < dotCount; i++) {
-          let t = ((i / (dotCount - 1)) + ((now % 2000) / 2000)) % 1;
-          let px = startX + imgWidth + t * (endX - (startX + imgWidth));
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(px, y, scaledThick / 2.2, 0, 2 * Math.PI);
-          ctx.closePath();
-          ctx.globalAlpha = 0.7;
-          ctx.fillStyle = "#fff";
-          ctx.shadowColor = "#00e0ff";
-          ctx.shadowBlur = 16;
-          ctx.fill();
-          ctx.restore();
+        // Pipe 2: Tank to Tap
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(tankX + imgWidth, y);
+        ctx.lineTo(tapX, y);
+        let pipeGrad2 = ctx.createLinearGradient(tankX + imgWidth, y, tapX, y);
+        pipeGrad2.addColorStop(0, "#00b3ff");
+        pipeGrad2.addColorStop(0.5, "#ffe066");
+        pipeGrad2.addColorStop(1, "#ffe066");
+        ctx.strokeStyle = pipeGrad2;
+        ctx.lineWidth = scaledThick * 0.85;
+        ctx.shadowColor = "#ffe066";
+        ctx.shadowBlur = 18;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+
+        // Animated moving dots for both pipes
+        function drawFlowDots(pipeStart, pipeEnd, thick, color, speed = 2000) {
+          let dotCount = Math.max(6, Math.floor((pipeEnd - pipeStart) / 120));
+          let now = Date.now();
+          for (let i = 0; i < dotCount; i++) {
+            let t = ((i / (dotCount - 1)) + ((now % speed) / speed)) % 1;
+            let px = pipeStart + t * (pipeEnd - pipeStart);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(px, y, thick / 2.2, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.restore();
+          }
         }
+        drawFlowDots(startX + imgWidth, tankX, scaledThick, "#fff", 2000);
+        drawFlowDots(tankX + imgWidth, tapX, scaledThick * 0.85, "#ffe066", 2600);
 
-        // Draw length below the line
-        drawLabel(ctx, (startX + imgWidth + endX) / 2, y + 60, `Length: ${length} m`, "#ffc107", "#222", 24);
+        // Center points for labels
+        const pipe1Start = startX + imgWidth;
+        const pipe1End = tankX;
+        const pipe1Center = (pipe1Start + pipe1End) / 2;
+        const pipe2Start = tankX + imgWidth;
+        const pipe2End = tapX;
+        const pipe2Center = (pipe2Start + pipe2End) / 2;
 
-        // Draw diameter and Q above the line
-        drawLabel(ctx, (startX + imgWidth + endX) / 2, y - 60, `Diameter: ${diameter} mm   Q: ${q} LPM`, "#fff", "#007BFF", 24);
+        // Draw Diameter (centered above left half, white)
+        drawLabel(ctx, (pipe1Start + pipe1Center) / 2, y - 60, `Diameter: ${diameter} mm`, "#fff", "#1a3", 16);
+
+        // Draw Q (centered above right half of first pipe, yellow-green)
+        drawLabel(ctx, (pipe1Center + pipe1End) / 2, y - 60, `Q: ${q} LPM`, "#e6ff70", "#665c00", 16);
+
+        // Draw Length (centered below left half, yellow)
+        drawLabel(ctx, (pipe1Start + pipe1Center) / 2, y + 60, `Length: ${length} m`, "#ffe066", "#554400", 16);
+
+        // Draw Velocity (centered below right half, green)
+        drawLabel(ctx, (pipe1Center + pipe1End) / 2, y + 60, `Velocity: ${v} m/s`, "#00ff99", "#1a3", 16);
+
+        // Draw red arrow above the first pipe, centered
+        drawArrow(ctx, pipe1Center, y - 30, 180, 0, 38, "#ff2d2d");
+
+        // Draw red arrow above the second pipe, centered
+        drawArrow(ctx, pipe2Center, y - 30, 180, 0, 38, "#ff2d2d");
 
         // Animate the flow dots
         function animate() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // Redraw background
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           glowDot(startX + imgWidth / 2, y, "#00ffb3");
-          glowDot(endX + imgWidth / 2, y, "#00b3ff");
-          // Sump
+          glowDot(tankX + imgWidth / 2, y, "#00b3ff");
+          glowDot(tapX + imgWidth / 2, y, "#ffe066");
+          // Water Head
           ctx.save();
           ctx.beginPath();
           ctx.arc(startX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
@@ -491,52 +571,68 @@
           ctx.font = "bold 28px Segoe UI";
           ctx.fillStyle = "#00ffb3";
           ctx.textAlign = "center";
-          ctx.fillText("Sump", startX + imgWidth / 2, y + nodeRadius + 44);
+          ctx.fillText("Water Head", startX + imgWidth / 2, y + nodeRadius + 44);
           // Tank
           ctx.save();
           ctx.beginPath();
-          ctx.arc(endX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+          ctx.arc(tankX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
           ctx.closePath();
           ctx.shadowColor = "#00b3ff";
           ctx.shadowBlur = 24;
-          ctx.drawImage(tankImg, endX, y - imgWidth / 2, imgWidth, imgWidth);
+          ctx.drawImage(tankImg, tankX, y - imgWidth / 2, imgWidth, imgWidth);
           ctx.restore();
           ctx.font = "bold 28px Segoe UI";
           ctx.fillStyle = "#00b3ff";
           ctx.textAlign = "center";
-          ctx.fillText("Tank", endX + imgWidth / 2, y + nodeRadius + 44);
-          // Pipe
+          ctx.fillText("Tank", tankX + imgWidth / 2, y + nodeRadius + 44);
+          // Tap
           ctx.save();
           ctx.beginPath();
-          ctx.moveTo(startX + imgWidth, y);
-          ctx.lineTo(endX, y);
-          ctx.strokeStyle = pipeGrad;
+          ctx.arc(tapX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.shadowColor = "#ffe066";
+          ctx.shadowBlur = 24;
+          ctx.drawImage(tapImg, tapX, y - imgWidth / 2, imgWidth, imgWidth);
+          ctx.restore();
+          ctx.font = "bold 28px Segoe UI";
+          ctx.fillStyle = "#ffe066";
+          ctx.textAlign = "center";
+          ctx.fillText("Tap", tapX + imgWidth / 2, y + nodeRadius + 44);
+          // Pipe 1
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(pipe1Start, y);
+          ctx.lineTo(pipe1End, y);
+          ctx.strokeStyle = pipeGrad1;
           ctx.lineWidth = scaledThick;
           ctx.shadowColor = "#00e0ff";
           ctx.shadowBlur = 24;
           ctx.lineCap = "round";
           ctx.stroke();
           ctx.restore();
+          // Pipe 2
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(pipe2Start, y);
+          ctx.lineTo(pipe2End, y);
+          ctx.strokeStyle = pipeGrad2;
+          ctx.lineWidth = scaledThick * 0.85;
+          ctx.shadowColor = "#ffe066";
+          ctx.shadowBlur = 18;
+          ctx.lineCap = "round";
+          ctx.stroke();
+          ctx.restore();
           // Animated dots
-          let dotCount = Math.max(6, Math.floor(scaledLen / 120));
-          let now = Date.now();
-          for (let i = 0; i < dotCount; i++) {
-            let t = ((i / (dotCount - 1)) + ((now % 2000) / 2000)) % 1;
-            let px = startX + imgWidth + t * (endX - (startX + imgWidth));
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(px, y, scaledThick / 2.2, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.globalAlpha = 0.7;
-            ctx.fillStyle = "#fff";
-            ctx.shadowColor = "#00e0ff";
-            ctx.shadowBlur = 16;
-            ctx.fill();
-            ctx.restore();
-          }
+          drawFlowDots(pipe1Start, pipe1End, scaledThick, "#fff", 2000);
+          drawFlowDots(pipe2Start, pipe2End, scaledThick * 0.85, "#ffe066", 2600);
           // Labels
-          drawLabel(ctx, (startX + imgWidth + endX) / 2, y + 60, `Length: ${length} m`, "#ffc107", "#222", 24);
-          drawLabel(ctx, (startX + imgWidth + endX) / 2, y - 60, `Diameter: ${diameter} mm   Q: ${q} LPM`, "#fff", "#007BFF", 24);
+          drawLabel(ctx, (pipe1Start + pipe1Center) / 2, y - 60, `Diameter: ${diameter} mm`, "#fff", "#1a3", 16);
+          drawLabel(ctx, (pipe1Center + pipe1End) / 2, y - 60, `Q: ${q} LPM`, "#e6ff70", "#665c00", 16);
+          drawLabel(ctx, (pipe1Start + pipe1Center) / 2, y + 60, `Length: ${length} m`, "#ffe066", "#554400", 16);
+          drawLabel(ctx, (pipe1Center + pipe1End) / 2, y + 60, `Velocity: ${v} m/s`, "#00ff99", "#1a3", 16);
+          // Red arrows
+          drawArrow(ctx, pipe1Center, y - 30, 180, 0, 38, "#ff2d2d");
+          drawArrow(ctx, pipe2Center, y - 30, 180, 0, 38, "#ff2d2d");
           requestAnimationFrame(animate);
         }
         animate();
@@ -560,6 +656,30 @@
       ctx.strokeRect(x - width/2, y - fontSize, width, fontSize * 1.7);
       ctx.fillStyle = color;
       ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    // Helper to draw a red arrow (centered at x, y, width, angle in degrees)
+    function drawArrow(ctx, x, y, width, angleDeg, headSize, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.translate(x, y);
+      ctx.rotate(angleDeg * Math.PI / 180);
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(-width / 2, 0);
+      ctx.lineTo(width / 2 - headSize, 0);
+      ctx.stroke();
+      // Arrow head
+      ctx.beginPath();
+      ctx.moveTo(width / 2 - headSize, -headSize * 0.7);
+      ctx.lineTo(width / 2, 0);
+      ctx.lineTo(width / 2 - headSize, headSize * 0.7);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
     }
 
