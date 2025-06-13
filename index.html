@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pipe Design Table</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #f2f2f2;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #007BFF;
+      color: white;
+    }
+    input, select {
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 5px;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .output {
+      background-color: #111;
+      color: #0f0;
+      border: none;
+    }
+    #visualisationArea {
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+    }
+    .custom-alert-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .custom-alert-box {
+      background: #1b263b;
+      color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px #000a;
+      padding: 36px 40px 28px 40px;
+      min-width: 320px;
+      text-align: center;
+      font-family: 'Segoe UI', sans-serif;
+      position: relative;
+      animation: popIn 0.25s cubic-bezier(.4,2,.6,1);
+    }
+    .custom-alert-box h3 {
+      margin-top: 0;
+      color: #00e0ff;
+      font-size: 1.3em;
+      margin-bottom: 18px;
+    }
+    .custom-alert-box select {
+      font-size: 1.1em;
+      padding: 7px 16px;
+      border-radius: 6px;
+      border: 1px solid #007BFF;
+      margin-bottom: 18px;
+      margin-top: 8px;
+      background: #11203a;
+      color: #fff;
+      outline: none;
+    }
+    .custom-alert-box button {
+      background: linear-gradient(90deg,#00e0ff,#00b3ff);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 28px;
+      font-size: 1.1em;
+      cursor: pointer;
+      margin: 0 8px;
+      transition: background 0.2s;
+    }
+    .custom-alert-box button:hover {
+      background: linear-gradient(90deg,#00b3ff,#00e0ff);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Pipe Design Table</h2>
+  <div style="margin-bottom: 10px;">
+    <button id="addRowBtn" style="background-color: #007BFF; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px;" onclick="addRow()">Add Row</button>
+    <button id="visualiseBtn" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px;" onclick="openVisualiseModal()">Visualise</button>
+  </div>
+  <table id="pipeTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>FROM (M)</th>
+        <th>TO (M)</th>
+        <th>LENGTH (M)</th>
+        <th>GL</th>
+        <th>V (m/s)</th>
+        <th>Q (LPM)</th>
+        <th>TYPE</th>
+        <th>DIAMETER (mm)</th>
+        <th>AREA (m²)</th>
+        <th>v2 (Q/Area)</th>
+        <th>C (v²)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="pipeTableBody">
+      <!-- Rows will be added by JS -->
+    </tbody>
+  </table>
+
+  <!-- Visualise Modal -->
+  <div id="visualiseModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#222; padding:30px 40px; border-radius:10px; box-shadow:0 4px 24px #000; max-width:440px; margin:auto; text-align:center;">
+      <h3 style="color:#fff; margin-bottom:20px;">Visualise Network</h3>
+      <label style="color:#fff;">Number of Sources:</label>
+      <input type="number" id="numSources" min="1" max="5" value="2" style="margin-bottom:10px; width:100%;" onchange="renderNodeInputs()"><br>
+      <label style="color:#fff;">Number of Intermediary Nodes:</label>
+      <input type="number" id="numIntermediary" min="0" max="5" value="1" style="margin-bottom:10px; width:100%;" onchange="renderNodeInputs()"><br>
+      <div id="distanceInputs"></div>
+      <button onclick="drawGraph()" style="background:#007BFF; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-size:15px; margin-right:10px; margin-top:10px;">Draw</button>
+      <button onclick="closeVisualiseModal()" style="background:#dc3545; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-size:15px; margin-top:10px;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Visualisation Area -->
+  <div id="visualisationArea">
+    <canvas id="pipeCanvas" width="1600" height="500" style="background:transparent; display:block; margin:auto; max-width:100%;"></canvas>
+  </div>
+
+  <div id="customAlert" style="display:none;"></div>
+
+  <script>
+    const pipeData = [
+      { name: "100 DI K7CL", rate: 1230, diameter: 100 },
+      { name: "100 DI K9CL", rate: 1366, diameter: 100 },
+      { name: "150 DI K9CL", rate: 1696, diameter: 150 },
+      { name: "200 DI K7CL", rate: 2182, diameter: 200 },
+      { name: "200 DI K9CL", rate: 2568, diameter: 200 },
+      { name: "250 DI K7CL", rate: 2829, diameter: 250 },
+      { name: "250 DI K9CL", rate: 3340, diameter: 250 },
+      { name: "300 DI K7CL", rate: 3536, diameter: 300 },
+      { name: "300 DI K9CL", rate: 4184, diameter: 300 },
+      { name: "350 DI K7CL", rate: 4334, diameter: 350 },
+      { name: "350 DI K9CL", rate: 5097, diameter: 350 },
+      { name: "400 DI K7CL", rate: 5167, diameter: 400 },
+      { name: "400 DI K9CL", rate: 6080, diameter: 400 },
+      { name: "450 DI K7CL", rate: 6119, diameter: 450 },
+      { name: "450 DI K9CL", rate: 7311, diameter: 450 },
+      { name: "500 DI K7CL", rate: 7184, diameter: 500 },
+      { name: "500 DI K9CL", rate: 8442, diameter: 500 },
+      { name: "600 DI K7CL", rate: 9410, diameter: 600 },
+      { name: "600 DI K9CL", rate: 11113, diameter: 600 },
+      { name: "700 DI K7CL", rate: 12242, diameter: 700 },
+      { name: "700 DI K9CL", rate: 13660, diameter: 700 },
+      { name: "750 DI K7CL", rate: 13993, diameter: 750 },
+      { name: "750 DI K9CL", rate: 15285, diameter: 750 },
+      { name: "800 DI K7CL", rate: 15669, diameter: 800 },
+      { name: "800 DI K9CL", rate: 16971, diameter: 800 },
+      { name: "900 DI K7CL", rate: 19036, diameter: 900 },
+      { name: "900 DI K9CL", rate: 20533, diameter: 900 },
+      { name: "1000 DI K7CL", rate: 23715, diameter: 1000 },
+      { name: "1000 DI K9CL", rate: 24608, diameter: 1000 }
+    ];
+
+    function createPipeTypeSelect(rowIdx) {
+      const select = document.createElement("select");
+      select.id = `pipeType_${rowIdx}`;
+      select.onchange = () => updateRow(rowIdx);
+      pipeData.forEach((pipe, index) => {
+        let option = document.createElement("option");
+        option.value = index;
+        option.textContent = pipe.name;
+        select.appendChild(option);
+      });
+      return select;
+    }
+
+    function addRow(defaults = {from:0, to:50, qLpm:6000}) {
+      const tbody = document.getElementById("pipeTableBody");
+      const rowIdx = tbody.children.length + 1;
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${rowIdx}</td>
+        <td><input type="number" id="from_${rowIdx}" value="${defaults.from}" onchange="updateRow(${rowIdx})"></td>
+        <td><input type="number" id="to_${rowIdx}" value="${defaults.to}" onchange="updateRow(${rowIdx})"></td>
+        <td><input type="text" id="length_${rowIdx}" class="output" readonly></td>
+        <td><input type="text" id="gl_${rowIdx}" class="output" readonly value=""></td>
+        <td><input type="text" id="v_${rowIdx}" class="output" readonly></td>
+        <td><input type="number" id="qLpm_${rowIdx}" value="${defaults.qLpm}" onchange="updateRow(${rowIdx})"></td>
+        <td id="pipeTypeCell_${rowIdx}"></td>
+        <td><input type="text" id="diameter_${rowIdx}" class="output" readonly></td>
+        <td><input type="text" id="area_${rowIdx}" class="output" readonly></td>
+        <td><input type="text" id="v2_qarea_${rowIdx}" class="output" readonly></td>
+        <td><input type="text" id="v2_${rowIdx}" class="output" readonly></td>
+        <td>
+          <button onclick="deleteRow(this)" style="background:#dc3545; color:#fff; border:none; border-radius:4px; padding:6px 14px; font-size:15px; cursor:pointer;">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+
+      // Add pipe type select
+      const pipeTypeCell = document.getElementById(`pipeTypeCell_${rowIdx}`);
+      pipeTypeCell.appendChild(createPipeTypeSelect(rowIdx));
+
+      updateRow(rowIdx);
+      updateRowNumbers();
+    }
+
+    function deleteRow(btn) {
+      const tr = btn.closest('tr');
+      tr.parentNode.removeChild(tr);
+      updateRowNumbers();
+    }
+
+    function updateRowNumbers() {
+      const tbody = document.getElementById("pipeTableBody");
+      Array.from(tbody.children).forEach((tr, idx) => {
+        tr.children[0].textContent = idx + 1;
+      });
+    }
+
+    function updateRow(rowIdx) {
+      const from = parseFloat(document.getElementById(`from_${rowIdx}`).value) || 0;
+      const to = parseFloat(document.getElementById(`to_${rowIdx}`).value) || 0;
+      const length = to - from;
+      const qLpm = parseFloat(document.getElementById(`qLpm_${rowIdx}`).value) || 0;
+      const qM3ps = qLpm / 1000 / 60;
+      const pipeTypeSelect = document.getElementById(`pipeType_${rowIdx}`);
+      const selectedPipe = pipeData[pipeTypeSelect.value];
+      const d = selectedPipe.diameter / 1000;
+      const area = (Math.PI * d * d) / 4;
+      const v = qM3ps / area;
+      const v2 = v * v;
+      const v2_qarea = qM3ps / area;
+
+      document.getElementById(`length_${rowIdx}`).value = length.toFixed(2);
+      document.getElementById(`diameter_${rowIdx}`).value = selectedPipe.diameter;
+      document.getElementById(`area_${rowIdx}`).value = area.toFixed(4);
+      document.getElementById(`v_${rowIdx}`).value = v.toFixed(3);
+      document.getElementById(`v2_${rowIdx}`).value = v2.toFixed(3);
+      document.getElementById(`v2_qarea_${rowIdx}`).value = v2_qarea.toFixed(3);
+      document.getElementById(`gl_${rowIdx}`).value = "";
+    }
+
+    // Modal logic
+    function openVisualiseModal() {
+      const tbody = document.getElementById('pipeTableBody');
+      const rows = Array.from(tbody.children);
+      if (rows.length === 0) {
+        showSimpleAlert("No rows to visualise!");
+        return;
+      }
+      if (rows.length > 1) {
+        showRowSelectAlert(rows.length, function(rowIdx) {
+          visualiseRow(rowIdx);
+        });
+      } else {
+        visualiseRow(1);
+      }
+    }
+
+    // Custom visually pleasing alert for row selection
+    function showRowSelectAlert(rowCount, callback) {
+      const overlay = document.getElementById('customAlert');
+      overlay.innerHTML = `
+        <div class="custom-alert-overlay">
+          <div class="custom-alert-box">
+            <h3>Visualise Pipe Row</h3>
+            <div style="margin-bottom:12px;">Select which row you want to visualise:</div>
+            <select id="rowSelect">
+              ${Array.from({length: rowCount}, (_, i) => `<option value="${i+1}">Row ${i+1}</option>`).join('')}
+            </select>
+            <br>
+            <button onclick="confirmRowSelect()">OK</button>
+            <button onclick="closeCustomAlert()">Cancel</button>
+          </div>
+        </div>
+      `;
+      overlay.style.display = "block";
+      window.confirmRowSelect = function() {
+        const idx = parseInt(document.getElementById('rowSelect').value);
+        overlay.style.display = "none";
+        callback(idx);
+      };
+      window.closeCustomAlert = function() {
+        overlay.style.display = "none";
+      };
+    }
+
+    // Simple custom alert for single message
+    function showSimpleAlert(msg) {
+      const overlay = document.getElementById('customAlert');
+      overlay.innerHTML = `
+        <div class="custom-alert-overlay">
+          <div class="custom-alert-box">
+            <div style="font-size:1.1em; margin-bottom:18px;">${msg}</div>
+            <button onclick="closeCustomAlert()">OK</button>
+          </div>
+        </div>
+      `;
+      overlay.style.display = "block";
+      window.closeCustomAlert = function() {
+        overlay.style.display = "none";
+      };
+    }
+
+    function visualiseRow(rowIdx) {
+      // Get values from the selected row
+      const length = parseFloat(document.getElementById(`length_${rowIdx}`).value) || 0;
+      const diameter = parseFloat(document.getElementById(`diameter_${rowIdx}`).value) || 100;
+      const q = parseFloat(document.getElementById(`qLpm_${rowIdx}`).value) || 0;
+
+      // Proportional scaling
+      const minLenPx = 350, maxLenPx = 1100;
+      const minLenVal = 1, maxLenVal = 1000;
+      let scaledLen = minLenPx + ((length - minLenVal) * (maxLenPx - minLenPx)) / (maxLenVal - minLenVal);
+      if (scaledLen < minLenPx) scaledLen = minLenPx;
+      if (scaledLen > maxLenPx) scaledLen = maxLenPx;
+
+      // For thickness, diameter is 100,200,...1000, but don't show too much difference
+      const minThickPx = 16, maxThickPx = 44;
+      const minDia = 100, maxDia = 1000;
+      let scaledThick = minThickPx + ((diameter - minDia) * (maxThickPx - minThickPx)) / (maxDia - minDia);
+      if (scaledThick < minThickPx) scaledThick = minThickPx;
+      if (scaledThick > maxThickPx) scaledThick = maxThickPx;
+
+      // Draw
+      const canvas = document.getElementById('pipeCanvas');
+      // Make canvas bigger and retina-friendly
+      canvas.width = 1600;
+      canvas.height = 500;
+      canvas.style.width = "100%";
+      canvas.style.maxWidth = "1600px";
+      canvas.style.height = "500px";
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Load images
+      const sumpImg = new Image();
+      sumpImg.src = "Sump.jpg";
+      const tankImg = new Image();
+      tankImg.src = "Tank.jpg";
+
+      sumpImg.onload = tankImg.onload = function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Layout
+        const margin = 160;
+        const nodeRadius = 60;
+        const imgWidth = 140;
+        const y = canvas.height / 2;
+        const startX = margin;
+        const endX = startX + scaledLen;
+
+        // Background gradient
+        let grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        grad.addColorStop(0, "#0d1b2a");
+        grad.addColorStop(1, "#1b263b");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Glowing dots at ends
+        function glowDot(x, y, color) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, nodeRadius + 16, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 40;
+          ctx.globalAlpha = 0.4;
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
+        glowDot(startX + imgWidth / 2, y, "#00ffb3");
+        glowDot(endX + imgWidth / 2, y, "#00b3ff");
+
+        // Draw Sump
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(startX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.shadowColor = "#00ffb3";
+        ctx.shadowBlur = 24;
+        ctx.drawImage(sumpImg, startX, y - imgWidth / 2, imgWidth, imgWidth);
+        ctx.restore();
+        ctx.font = "bold 28px Segoe UI";
+        ctx.fillStyle = "#00ffb3";
+        ctx.textAlign = "center";
+        ctx.fillText("Sump", startX + imgWidth / 2, y + nodeRadius + 44);
+
+        // Draw Tank
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(endX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.shadowColor = "#00b3ff";
+        ctx.shadowBlur = 24;
+        ctx.drawImage(tankImg, endX, y - imgWidth / 2, imgWidth, imgWidth);
+        ctx.restore();
+        ctx.font = "bold 28px Segoe UI";
+        ctx.fillStyle = "#00b3ff";
+        ctx.textAlign = "center";
+        ctx.fillText("Tank", endX + imgWidth / 2, y + nodeRadius + 44);
+
+        // Draw pipe (line)
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(startX + imgWidth, y);
+        ctx.lineTo(endX, y);
+        // Neon gradient for pipe
+        let pipeGrad = ctx.createLinearGradient(startX + imgWidth, y, endX, y);
+        pipeGrad.addColorStop(0, "#00ffb3");
+        pipeGrad.addColorStop(0.5, "#00e0ff");
+        pipeGrad.addColorStop(1, "#00b3ff");
+        ctx.strokeStyle = pipeGrad;
+        ctx.lineWidth = scaledThick;
+        ctx.shadowColor = "#00e0ff";
+        ctx.shadowBlur = 24;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw animated moving dots on pipe for flow effect
+        let dotCount = Math.max(6, Math.floor(scaledLen / 120));
+        let now = Date.now();
+        for (let i = 0; i < dotCount; i++) {
+          let t = ((i / (dotCount - 1)) + ((now % 2000) / 2000)) % 1;
+          let px = startX + imgWidth + t * (endX - (startX + imgWidth));
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(px, y, scaledThick / 2.2, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = "#fff";
+          ctx.shadowColor = "#00e0ff";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Draw length below the line
+        drawLabel(ctx, (startX + imgWidth + endX) / 2, y + 60, `Length: ${length} m`, "#ffc107", "#222", 24);
+
+        // Draw diameter and Q above the line
+        drawLabel(ctx, (startX + imgWidth + endX) / 2, y - 60, `Diameter: ${diameter} mm   Q: ${q} LPM`, "#fff", "#007BFF", 24);
+
+        // Animate the flow dots
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // Redraw background
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          glowDot(startX + imgWidth / 2, y, "#00ffb3");
+          glowDot(endX + imgWidth / 2, y, "#00b3ff");
+          // Sump
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(startX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.shadowColor = "#00ffb3";
+          ctx.shadowBlur = 24;
+          ctx.drawImage(sumpImg, startX, y - imgWidth / 2, imgWidth, imgWidth);
+          ctx.restore();
+          ctx.font = "bold 28px Segoe UI";
+          ctx.fillStyle = "#00ffb3";
+          ctx.textAlign = "center";
+          ctx.fillText("Sump", startX + imgWidth / 2, y + nodeRadius + 44);
+          // Tank
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(endX + imgWidth / 2, y, nodeRadius, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.shadowColor = "#00b3ff";
+          ctx.shadowBlur = 24;
+          ctx.drawImage(tankImg, endX, y - imgWidth / 2, imgWidth, imgWidth);
+          ctx.restore();
+          ctx.font = "bold 28px Segoe UI";
+          ctx.fillStyle = "#00b3ff";
+          ctx.textAlign = "center";
+          ctx.fillText("Tank", endX + imgWidth / 2, y + nodeRadius + 44);
+          // Pipe
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(startX + imgWidth, y);
+          ctx.lineTo(endX, y);
+          ctx.strokeStyle = pipeGrad;
+          ctx.lineWidth = scaledThick;
+          ctx.shadowColor = "#00e0ff";
+          ctx.shadowBlur = 24;
+          ctx.lineCap = "round";
+          ctx.stroke();
+          ctx.restore();
+          // Animated dots
+          let dotCount = Math.max(6, Math.floor(scaledLen / 120));
+          let now = Date.now();
+          for (let i = 0; i < dotCount; i++) {
+            let t = ((i / (dotCount - 1)) + ((now % 2000) / 2000)) % 1;
+            let px = startX + imgWidth + t * (endX - (startX + imgWidth));
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(px, y, scaledThick / 2.2, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = "#fff";
+            ctx.shadowColor = "#00e0ff";
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.restore();
+          }
+          // Labels
+          drawLabel(ctx, (startX + imgWidth + endX) / 2, y + 60, `Length: ${length} m`, "#ffc107", "#222", 24);
+          drawLabel(ctx, (startX + imgWidth + endX) / 2, y - 60, `Diameter: ${diameter} mm   Q: ${q} LPM`, "#fff", "#007BFF", 24);
+          requestAnimationFrame(animate);
+        }
+        animate();
+      };
+      sumpImg.onload();
+    }
+
+    // Helper to draw a label with background and color
+    function drawLabel(ctx, x, y, text, color = "#fff", bg = "#222", fontSize = 16) {
+      ctx.save();
+      ctx.font = `bold ${fontSize}px Segoe UI`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const width = ctx.measureText(text).width + 24;
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = bg;
+      ctx.fillRect(x - width/2, y - fontSize, width, fontSize * 1.7);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - width/2, y - fontSize, width, fontSize * 1.7);
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    // Add the initial row on page load
+    window.onload = () => addRow();
+  </script>
+</body>
+</html>
